@@ -1,0 +1,34 @@
+.Counter {
+  border-bottom: 1px solid lightgray;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  margin: 0;
+}
+
+.Counter h1 {
+  flex: 1;
+  margin: 0;
+}
+
+.Counter button {
+  background-color: white;
+  box-shadow: 2px 2px 3px -3px lightgrey;
+  font-size: 1.4rem;
+  border: 0;
+  width: 2rem;
+  height: 2.5rem;
+  margin-left: 0.1rem;
+  outline: none;
+}
+
+.Counter button:hover {
+  background-color: lightgray;
+  box-shadow: 2px 2px 3px -3px black;
+}
+
+.Counter button:active {
+  background-color: black;
+  color:white;
+}
