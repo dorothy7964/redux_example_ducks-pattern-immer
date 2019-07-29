@@ -1,68 +1,126 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# immer
 
-## Available Scripts
+ 마치 불변성에 대해서 신경쓰지 않는 것 처럼 데이터를 업데이트 해주면,   
+ 라이브러리가 알아서 불변성 유지를 해주면서 업데이트를 해줍니다.
 
-In the project directory, you can run:
+```javascript
+import produce from 'immer';
+```
 
-### `npm start`
+### counter.js 모듈에 immer 적용
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+**src/store/modules/counter.js**
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+```javascript
+import produce from 'immer'; // **** immer 불러오기
 
-### `npm test`
+// 액션 타입 정의
+const CHANGE_COLOR = 'counter/CHANGE_COLOR';
+const INCREMENT = 'counter/INCREMENT';
+const DECREMENT = 'counter/DECREMENT';
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+// 액션 생섬함수 정의
+export const changeColor = color => ({ type: CHANGE_COLOR, color });
+export const increment = () => ({ type: INCREMENT });
+export const decrement = () => ({ type: DECREMENT });
 
-### `npm run build`
+// 초기상태 정의
+const initialState = {
+  color: 'red',
+  number: 0,
+};
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+export default function counter(state = initialState, action) {
+  switch (action.type) {
+    case CHANGE_COLOR:
+      return produce(state, draft => {
+        draft.color = action.color;
+      });
+    case INCREMENT:
+      return produce(state, draft => {
+        draft.number++;
+      });
+    case DECREMENT:
+      return produce(state, draft => {
+        draft.number--;
+      });
+    default:
+      return state;
+  }
+}
+```
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+### waiting.js 모듈에 Immer 적용
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+**src/modules/waiting.js**
 
-### `npm run eject`
+```javascript
+import { createAction, handleActions } from 'redux-actions';
+import produce from 'immer'; // **** Immer 불러오기
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+const CHANGE_INPUT = 'waiting/CHANGE_INPUT'; // 인풋 값 변경
+const CREATE = 'waiting/CREATE'; // 명단에 이름 추가
+const ENTER = 'waiting/ENTER'; // 입장
+const LEAVE = 'waiting/LEAVE'; // 나감
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+let id = 3;
+// createAction 으로 액션 생성함수 정의
+export const changeInput = createAction(CHANGE_INPUT, text => text);
+export const create = createAction(CREATE, text => ({ text, id: id++ }));
+export const enter = createAction(ENTER, id => id);
+export const leave = createAction(LEAVE, id => id);
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+// **** 초기 상태 정의
+const initialState = {
+  input: '',
+  list: [
+    {
+      id: 0,
+      name: '홍길동',
+      entered: true,
+    },
+    {
+      id: 1,
+      name: '콩쥐',
+      entered: false,
+    },
+    {
+      id: 2,
+      name: '팥쥐',
+      entered: false,
+    },
+  ],
+};
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+// handleActions 로 리듀서 함수 작성
+// **** 내부 업데이트 로직 모두 업데이트
+export default handleActions(
+  {
+    [CHANGE_INPUT]: (state, action) =>
+      produce(state, draft => {
+        draft.input = action.payload;
+      }),
+    [CREATE]: (state, action) =>
+      produce(state, draft => {
+        draft.list.push({
+          id: action.payload.id,
+          name: action.payload.text,
+          entered: false,
+        });
+      }),
+    [ENTER]: (state, action) =>
+      produce(state, draft => {
+        const item = draft.list.find(item => item.id === action.payload);
+        item.entered = !item.entered;
+      }),
+    [LEAVE]: (state, action) =>
+      produce(state, draft => {
+        draft.list.splice(
+          draft.list.findIndex(item => item.id === action.payload),
+          1
+        );
+      }),
+  },
+  initialState
+);
+```
